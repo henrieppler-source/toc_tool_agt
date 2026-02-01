@@ -1,0 +1,41 @@
+name: Build Windows EXE & Release
+
+permissions:
+  contents: write
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller pypdf openpyxl reportlab
+
+      - name: Build EXE (PyInstaller)
+        run: |
+          pyinstaller --noconsole --onefile `
+            --name TOC_Tool_AGT `
+            --add-data "Muster-Inhaltsverzeichnis-EXCEL.xlsx;." `
+            toc_tool_AGT.py
+
+      - name: Create GitHub Release and upload EXE
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/TOC_Tool_AGT.exe
